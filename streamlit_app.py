@@ -20,7 +20,7 @@ st.set_page_config(layout="wide", page_title="Parkinson's Disease Detection App"
 # ---------------------------
 @st.cache_data
 def load_data():
-    """Load the preprocessed dataset (processed_data.csv)."""
+    """Load the preprocessed dataset from processed_data.csv."""
     return pd.read_csv("processed_data.csv")
 
 @st.cache_resource
@@ -39,11 +39,11 @@ log_reg, rf, scaler = load_models()
 # Navigation Sidebar
 # ---------------------------
 st.sidebar.title("Navigation")
-page = st.sidebar.radio("Go to", options=["Project Summary","Model Performance Overview", "EDA"])
+page = st.sidebar.radio("Go to", options=["Project Summary", "Model Performance Overview", "EDA"])
 
 # ---------------------------
-# If needed, perform a train/test split on the processed_data for evaluation
-# We'll use 20% as the test set.
+# Perform a Train-Test Split (on the fly using processed_data.csv)
+# ---------------------------
 X = df.drop(columns=["status"])
 y = df["status"]
 X_train, X_test, y_train, y_test = train_test_split(
@@ -53,7 +53,7 @@ X_train, X_test, y_train, y_test = train_test_split(
 X_test_scaled = scaler.transform(X_test)
 
 # ---------------------------
-# Page: Model Summary (Main Page)
+# Page: Project Summary
 # ---------------------------
 if page == "Project Summary":
     st.title("Project Summary")
@@ -61,49 +61,55 @@ if page == "Project Summary":
     
     st.header("🔍 Motivation")
     st.write("""
-    Parkinson’s disease (PD) is a neurodegenerative disorder that affects millions of people worldwide. 
-    Early detection can significantly improve the quality of life for patients. 
-    Machine learning models can help analyze patient data and detect PD more accurately than traditional methods.
+    Parkinson’s disease (PD) is a neurodegenerative disorder affecting millions worldwide.
+    Early detection is crucial for improving patient outcomes, and machine learning offers
+    promising tools for more accurate diagnosis.
     """)
-
+    
     st.header("🎯 Goal")
     st.write("""
-    This project aims to build an **end-to-end machine learning pipeline** for detecting Parkinson’s disease using biomedical voice data.  
-    We analyze various voice features and train predictive models to differentiate between healthy individuals and those with PD.
+    Build an **end-to-end machine learning pipeline** for detecting Parkinson’s disease using biomedical voice data.
+    The project involves data preprocessing, EDA, feature engineering, and model training with Logistic Regression
+    and Random Forest.
     """)
-
+    
     st.header("⚙️ Methodology")
     st.write("""
-    - **Data Preprocessing**: Cleaned and normalized biomedical voice measurements.  
-    - **Exploratory Data Analysis (EDA)**: Identified key patterns and correlations in the dataset.  
-    - **Feature Engineering**: Selected the most relevant features to improve model accuracy.  
-    - **Model Training**: Used Logistic Regression and Random Forest to classify patients.  
-    - **Evaluation**: Assessed model performance using Accuracy, Precision, Recall, F1-score, and AUC.
+    - **Data Preprocessing**: Cleaned and normalized voice measurements.
+    - **EDA**: Explored correlations and patterns in the dataset.
+    - **Feature Engineering**: Selected key features to enhance model performance.
+    - **Model Training**: Implemented Logistic Regression and Random Forest.
+    - **Evaluation**: Compared models using metrics like Accuracy, Precision, Recall, F1 Score, and AUC.
     """)
-
+    
     st.header("🚧 Challenges")
     st.write("""
-    - **Data Imbalance**: The dataset had more PD cases than healthy individuals, requiring careful handling.  
-    - **Feature Selection**: Some features were redundant or had low predictive value.  
-    - **Model Generalization**: Avoiding overfitting while ensuring good real-world performance.  
+    - **Data Imbalance**: Handling the skewed distribution of PD vs. healthy cases.
+    - **Feature Selection**: Identifying the most predictive features.
+    - **Generalization**: Ensuring models perform well on unseen data.
     """)
-
+    
     st.header("🔮 Future Work")
     st.write("""
-    - Utilize a larger dataset from the Parkinson’s Progression Markers Initiative (PPMI) once access is granted. This will improve model generalization and robustness. 
-    - **Try More Advanced Models**: Explore deep learning methods (e.g., CNNs for time-series data).   
-    - **Deploy as a Web App**: Integrate the model into a user-friendly web-based diagnostic tool for medical practitioners.
+    - Augment the dataset by incorporating more features from the Parkinson’s Progression Markers Initiative (PPMI)
+      once access is granted.
+    - Explore advanced models, including deep learning approaches.
+    - Deploy the solution as a scalable, web-based diagnostic tool.
     """)
-
+    
     st.header("📌 Conclusion")
     st.write("""
-    This project demonstrates how machine learning can be applied to medical diagnostics.  
-    While the current models provide good accuracy, there is room for improvement and expansion.
+    This project showcases the potential of machine learning in medical diagnostics.
+    While the current models perform well, further enhancements and larger datasets will help drive
+    even better accuracy and reliability in real-world scenarios.
     """)
-
-    st.subheader("✨ Thanks for Exploring this Project! 🚀")
     
-if page == "Model Performance Overview":
+    st.subheader("✨ Thanks for Exploring this Project! 🚀")
+
+# ---------------------------
+# Page: Model Performance Overview
+# ---------------------------
+elif page == "Model Performance Overview":
     st.title("Model Performance Overview")
     st.write("""
     This page presents a summary of the models built for Parkinson's Disease Detection.
@@ -205,14 +211,14 @@ elif page == "EDA":
     st.subheader("Correlation Heatmap")
     st.image("correlation_heatmap.png", caption="Correlation Heatmap", use_container_width=True)
     
-    # EDA Sidebar Options (using the same sidebar but add additional keys to avoid conflicts)
+    # EDA Sidebar Options (using additional keys to avoid conflicts)
     st.sidebar.subheader("EDA Settings")
-    feature_options = list(df.columns)
-    if "status" in feature_options:
-        feature_options.remove("status")  # Remove target variable for feature selection
+    eda_feature_options = list(df.columns)
+    if "status" in eda_feature_options:
+        eda_feature_options.remove("status")
     
-    eda_feature1 = st.sidebar.selectbox("Select Feature 1 for EDA", feature_options, index=0, key="eda1")
-    eda_feature2 = st.sidebar.selectbox("Select Feature 2 for EDA", feature_options, index=1, key="eda2")
+    eda_feature1 = st.sidebar.selectbox("Select Feature 1 for EDA", eda_feature_options, index=0, key="eda1")
+    eda_feature2 = st.sidebar.selectbox("Select Feature 2 for EDA", eda_feature_options, index=1, key="eda2")
     eda_plot_type = st.sidebar.radio("Choose EDA Plot Type", ["Scatter", "Box", "Violin"], key="eda_plot")
     
     st.subheader(f"{eda_plot_type} Plot")
