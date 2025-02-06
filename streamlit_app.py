@@ -13,7 +13,7 @@ from sklearn.metrics import (
 # ---------------------------
 # Set Page Configuration
 # ---------------------------
-st.set_page_config( page_title="Parkinson's Disease Detection App")
+st.set_page_config(page_title="Parkinson's Disease Detection App")
 
 # ---------------------------
 # Caching Functions for Data and Models
@@ -25,15 +25,14 @@ def load_data():
 
 @st.cache_resource
 def load_models():
-    """Load the trained models and scaler."""
+    """Load the trained Logistic Regression model and scaler."""
     log_reg = joblib.load("logistic_model.pkl")
-    rf = joblib.load("random_forest_model.pkl")
     scaler = joblib.load("scaler.pkl")
-    return log_reg, rf, scaler
+    return log_reg, scaler
 
 # Load the complete dataset and models
 df = load_data()
-log_reg, rf, scaler = load_models()
+log_reg, scaler = load_models()
 
 # ---------------------------
 # Navigation Sidebar
@@ -69,8 +68,7 @@ if page == "Project Summary":
     st.header("🎯 Goal")
     st.write("""
     Build an **end-to-end machine learning pipeline** for detecting Parkinson’s disease using biomedical voice data.
-    The project involves data preprocessing, EDA, feature engineering, and model training with Logistic Regression
-    and Random Forest.
+    The project involves data preprocessing, EDA, feature engineering, and model training with Logistic Regression.
     """)
     
     st.header("⚙️ Methodology")
@@ -78,7 +76,7 @@ if page == "Project Summary":
     - **Data Preprocessing**: Cleaned and normalized voice measurements.
     - **EDA**: Explored correlations and patterns in the dataset.
     - **Feature Engineering**: Selected key features to enhance model performance.
-    - **Model Training**: Implemented Logistic Regression and Random Forest.
+    - **Model Training**: Implemented Logistic Regression.
     - **Evaluation**: Compared models using metrics like Accuracy, Precision, Recall, F1 Score, and AUC.
     """)
     
@@ -91,8 +89,7 @@ if page == "Project Summary":
     
     st.header("🔮 Future Work")
     st.write("""
-    - Augment the dataset by incorporating more features from the Parkinson’s Progression Markers Initiative (PPMI)
-      once access is granted.
+    - Augment the dataset by incorporating more features once additional data becomes available.
     - Explore advanced models, including deep learning approaches.
     - Deploy the solution as a scalable, web-based diagnostic tool.
     """)
@@ -100,7 +97,7 @@ if page == "Project Summary":
     st.header("📌 Conclusion")
     st.write("""
     This project showcases the potential of machine learning in medical diagnostics.
-    While the current models perform well, further enhancements and larger datasets will help drive
+    While the current model performs well, further enhancements and larger datasets will help drive
     even better accuracy and reliability in real-world scenarios.
     """)
     
@@ -112,16 +109,15 @@ if page == "Project Summary":
 elif page == "Model Performance Overview":
     st.title("Model Performance Overview")
     st.write("""
-    This page presents a summary of the models built for Parkinson's Disease Detection.
+    This page presents a summary of the Logistic Regression model built for Parkinson's Disease Detection.
     It includes:
-    - Confusion Matrices for each model.
-    - Feature Importances from both Logistic Regression and Random Forest.
+    - A Confusion Matrix.
+    - Feature Importances.
     - A bar chart comparing performance metrics (Accuracy, Precision, Recall, F1 Score, and AUC).
     """)
     
-    # --- Compute Predictions ---
+    # --- Compute Predictions for Logistic Regression ---
     y_pred_log = log_reg.predict(X_test_scaled)
-    y_pred_rf = rf.predict(X_test)
     
     # --- Compute Metrics ---
     def compute_metrics(y_true, y_pred):
@@ -133,11 +129,10 @@ elif page == "Model Performance Overview":
             "AUC": roc_auc_score(y_true, y_pred)
         }
     metrics_log = compute_metrics(y_test, y_pred_log)
-    metrics_rf = compute_metrics(y_test, y_pred_rf)
-    metrics_df = pd.DataFrame([metrics_log, metrics_rf], index=["Logistic Regression", "Random Forest"])
+    metrics_df = pd.DataFrame([metrics_log], index=["Logistic Regression"])
     
-    # --- Confusion Matrices ---
-    st.subheader("Confusion Matrices")
+    # --- Confusion Matrix ---
+    st.subheader("Confusion Matrix")
     def plot_confusion_matrix(y_true, y_pred, model_name):
         cm = confusion_matrix(y_true, y_pred)
         fig, ax = plt.subplots(figsize=(5, 4))
@@ -149,37 +144,22 @@ elif page == "Model Performance Overview":
         ax.set_title(f"{model_name} Confusion Matrix")
         return fig
     
-    col_cm1, col_cm2 = st.columns(2)
-    with col_cm1:
-        st.pyplot(plot_confusion_matrix(y_test, y_pred_log, "Logistic Regression"))
-    with col_cm2:
-        st.pyplot(plot_confusion_matrix(y_test, y_pred_rf, "Random Forest"))
+    st.pyplot(plot_confusion_matrix(y_test, y_pred_log, "Logistic Regression"))
     
     # --- Feature Importances ---
     st.subheader("Feature Importances")
     # For Logistic Regression, use absolute coefficient values
     logistic_importances = np.abs(log_reg.coef_).flatten()
     indices_lr = np.argsort(logistic_importances)
-    # For Random Forest, use its feature_importances_ attribute
-    rf_importances = rf.feature_importances_
-    indices_rf = np.argsort(rf_importances)
     
-    col_fi1, col_fi2 = st.columns(2)
-    with col_fi1:
-        fig_lr, ax_lr = plt.subplots(figsize=(8, 5))
-        ax_lr.barh(np.array(X.columns)[indices_lr], logistic_importances[indices_lr], color='skyblue')
-        ax_lr.set_title("Logistic Regression Feature Importances")
-        ax_lr.set_xlabel("Coefficient Magnitude")
-        st.pyplot(fig_lr)
-    with col_fi2:
-        fig_rf, ax_rf = plt.subplots(figsize=(8, 5))
-        ax_rf.barh(np.array(X.columns)[indices_rf], rf_importances[indices_rf], color='lightgreen')
-        ax_rf.set_title("Random Forest Feature Importances")
-        ax_rf.set_xlabel("Importance")
-        st.pyplot(fig_rf)
+    fig_lr, ax_lr = plt.subplots(figsize=(8, 5))
+    ax_lr.barh(np.array(X.columns)[indices_lr], logistic_importances[indices_lr], color='skyblue')
+    ax_lr.set_title("Logistic Regression Feature Importances")
+    ax_lr.set_xlabel("Coefficient Magnitude")
+    st.pyplot(fig_lr)
     
     # --- Performance Metrics Bar Chart ---
-    st.subheader("Model Performance Comparison")
+    st.subheader("Performance Metrics")
     fig_metrics, ax_metrics = plt.subplots(figsize=(10, 6))
     metrics_df.plot(kind="bar", ax=ax_metrics, colormap="viridis")
     ax_metrics.set_ylabel("Score")
@@ -188,12 +168,10 @@ elif page == "Model Performance Overview":
     ax_metrics.grid(axis='y', linestyle='--', alpha=0.7)
     st.pyplot(fig_metrics)
     
-    # --- Detailed Classification Reports ---
-    with st.expander("View Detailed Classification Reports"):
+    # --- Detailed Classification Report ---
+    with st.expander("View Detailed Classification Report"):
         st.subheader("Logistic Regression Report")
         st.text(classification_report(y_test, y_pred_log))
-        st.subheader("Random Forest Report")
-        st.text(classification_report(y_test, y_pred_rf))
 
 # ---------------------------
 # Page: EDA
