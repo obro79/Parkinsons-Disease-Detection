@@ -13,7 +13,7 @@ from sklearn.metrics import (
 # ---------------------------
 # Set Page Configuration
 # ---------------------------
-st.set_page_config(layout = "wide",page_title="Parkinson's Disease Detection App")
+st.set_page_config( page_title="Parkinson's Disease Detection App")
 
 # ---------------------------
 # Caching Functions for Data and Models
@@ -119,17 +119,81 @@ elif page == "Model Performance Overview":
     - A bar chart comparing performance metrics (Accuracy, Precision, Recall, F1 Score, and AUC).
     """)
     
-    st.subheader("Confusion Matrices")
-    col_cm1, col_cm2 = st.columns(2)
-    st.image("/Users/owenfisher/Desktop/Parkinsons Disease Detection/Screenshot 2025-02-05 at 6.49.46 PM.png", caption="Logistic Regression Confusion Matrix")
-    st.image("/Users/owenfisher/Desktop/Parkinsons Disease Detection/Screenshot 2025-02-05 at 6.50.02 PM.png", caption="Logistic Regression Feature Importances")
-
-    st.subheader("Performance Metrics Comparison")
-    # Replace with the actual file path for the performance metrics chart image
-    st.image("/Users/owenfisher/Desktop/Parkinsons Disease Detection/Screenshot 2025-02-05 at 6.50.51 PM.png", caption="Performance Metrics Comparison")
+    # --- Compute Predictions ---
+    y_pred_log = log_reg.predict(X_test_scaled)
+    y_pred_rf = rf.predict(X_test)
     
-    st.subheader("Detailed Classification Reports")
-    st.write("Please refer to the saved report files for detailed classification reports.")
+    # --- Compute Metrics ---
+    def compute_metrics(y_true, y_pred):
+        return {
+            "Accuracy": accuracy_score(y_true, y_pred),
+            "Precision": precision_score(y_true, y_pred),
+            "Recall": recall_score(y_true, y_pred),
+            "F1 Score": f1_score(y_true, y_pred),
+            "AUC": roc_auc_score(y_true, y_pred)
+        }
+    metrics_log = compute_metrics(y_test, y_pred_log)
+    metrics_rf = compute_metrics(y_test, y_pred_rf)
+    metrics_df = pd.DataFrame([metrics_log, metrics_rf], index=["Logistic Regression", "Random Forest"])
+    
+    # --- Confusion Matrices ---
+    st.subheader("Confusion Matrices")
+    def plot_confusion_matrix(y_true, y_pred, model_name):
+        cm = confusion_matrix(y_true, y_pred)
+        fig, ax = plt.subplots(figsize=(5, 4))
+        sns.heatmap(cm, annot=True, fmt='d', cmap="Blues", ax=ax,
+                    xticklabels=["Healthy", "Parkinson's"],
+                    yticklabels=["Healthy", "Parkinson's"])
+        ax.set_xlabel("Predicted")
+        ax.set_ylabel("Actual")
+        ax.set_title(f"{model_name} Confusion Matrix")
+        return fig
+    
+    col_cm1, col_cm2 = st.columns(2)
+    with col_cm1:
+        st.pyplot(plot_confusion_matrix(y_test, y_pred_log, "Logistic Regression"))
+    with col_cm2:
+        st.pyplot(plot_confusion_matrix(y_test, y_pred_rf, "Random Forest"))
+    
+    # --- Feature Importances ---
+    st.subheader("Feature Importances")
+    # For Logistic Regression, use absolute coefficient values
+    logistic_importances = np.abs(log_reg.coef_).flatten()
+    indices_lr = np.argsort(logistic_importances)
+    # For Random Forest, use its feature_importances_ attribute
+    rf_importances = rf.feature_importances_
+    indices_rf = np.argsort(rf_importances)
+    
+    col_fi1, col_fi2 = st.columns(2)
+    with col_fi1:
+        fig_lr, ax_lr = plt.subplots(figsize=(8, 5))
+        ax_lr.barh(np.array(X.columns)[indices_lr], logistic_importances[indices_lr], color='skyblue')
+        ax_lr.set_title("Logistic Regression Feature Importances")
+        ax_lr.set_xlabel("Coefficient Magnitude")
+        st.pyplot(fig_lr)
+    with col_fi2:
+        fig_rf, ax_rf = plt.subplots(figsize=(8, 5))
+        ax_rf.barh(np.array(X.columns)[indices_rf], rf_importances[indices_rf], color='lightgreen')
+        ax_rf.set_title("Random Forest Feature Importances")
+        ax_rf.set_xlabel("Importance")
+        st.pyplot(fig_rf)
+    
+    # --- Performance Metrics Bar Chart ---
+    st.subheader("Model Performance Comparison")
+    fig_metrics, ax_metrics = plt.subplots(figsize=(10, 6))
+    metrics_df.plot(kind="bar", ax=ax_metrics, colormap="viridis")
+    ax_metrics.set_ylabel("Score")
+    ax_metrics.set_ylim(0, 1)
+    ax_metrics.set_title("Performance Metrics")
+    ax_metrics.grid(axis='y', linestyle='--', alpha=0.7)
+    st.pyplot(fig_metrics)
+    
+    # --- Detailed Classification Reports ---
+    with st.expander("View Detailed Classification Reports"):
+        st.subheader("Logistic Regression Report")
+        st.text(classification_report(y_test, y_pred_log))
+        st.subheader("Random Forest Report")
+        st.text(classification_report(y_test, y_pred_rf))
 
 # ---------------------------
 # Page: EDA
